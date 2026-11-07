@@ -1,6 +1,7 @@
 /* Project Details: look taken from mockup-v3.html (7 Nov 2026). Dark is the
    spec; the light set below only follows Trello when a member uses light mode. */
 :root {
+  color-scheme: dark; /* tells Chrome the frame is dark, so it does not paint it white */
   --surface: #282e33;
   --input: #22272b;
   --input-hover: #2c333a;
@@ -34,6 +35,7 @@
   --shadow: rgba(0,0,0,.55);
 }
 html[data-theme="light"] {
+  color-scheme: light;
   --surface: #f7f8f9;
   --input: #ffffff;
   --input-hover: #f1f2f4;
@@ -237,7 +239,7 @@ html[data-theme="light"] .chase-box { background: var(--surface); border: 1px so
 .chip-grey { background: var(--grey-bg); color: var(--grey-text); }
 
 /* Tabs */
-.tabs { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 14px; border-bottom: 1px solid var(--border); background: transparent; }
+.tabs { display: flex; flex-wrap: nowrap; gap: 4px; margin: 0 0 14px; border-bottom: 1px solid var(--border); background: transparent; }
 .tab {
   position: relative; display: inline-flex; align-items: center; gap: 8px;
   font: inherit; font-weight: 600; font-size: 14px;
@@ -257,6 +259,14 @@ html[data-theme="light"] .chase-box { background: var(--surface); border: 1px so
 .tab-com.tab-on::after { background: var(--com); }
 .tab-cus.tab-on { color: var(--cus); background: var(--cus-bg); }
 .tab-cus.tab-on::after { background: var(--cus); }
+/* Trello's card back is narrower than the mock-up: keep the three tabs on one line */
+@media (max-width: 620px) {
+  .tab { padding: 8px 9px 9px; gap: 6px; font-size: 13px; white-space: nowrap; }
+  .tabs { gap: 2px; }
+}
+@media (max-width: 440px) {
+  .tab { padding: 8px 6px 9px; font-size: 12px; }
+}
 .panel { display: none; background: transparent; }
 .panel-on { display: block; }
 
