@@ -290,6 +290,7 @@
       await flush();
       const res = await PD.api("move", { token: token, cardId: cardId, to: to, why: why });
       card.listName = res.listName; card.idList = res.idList; moves = res.moves || [];
+      if (res.data) { state.last_update_at = res.data.last_update_at; state.last_update_by = res.data.last_update_by; paintStamp(); }
       if (dropPending && to === "LOST") {
         state.chase_log = chaseLog().concat([{ at: new Date().toISOString(), by: member.fullName }]);
         setCycle(); await flush();

@@ -102,6 +102,7 @@
     const res = await fetch(API_URL, {
       method: "POST",
       headers: { "content-type": "application/json" },
+      keepalive: true, // lets a save finish when the card is closed
       body: JSON.stringify(Object.assign({ action: action }, payload || {}))
     });
     let body = null;

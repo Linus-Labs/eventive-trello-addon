@@ -23,13 +23,41 @@ const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SE
 
 const END_LISTS = ["LOST", "KIV"];
 
+// Choice lists: the same text as docs/js/shared.js (Amazing Fields board set-up, 7 Nov 2026).
+const CHOICES: Record<string, string[]> = {
+  source: ["Email", "WhatsApp", "Call", "Tender", "Return", "Personal"],
+  stage: ["1. No reply", "2. Did not join the meeting", "3. Poor or no reply to questions", "4. Changed scope",
+      "5. No reply to proposal", "6. Asked for more", "7. Changed scope after proposal", "8. Reviewing with stakeholders"],
+  cycleA: [
+      "1.a | No Res | TP1 | 8 | W/C/E", "1.b | No Res | TP2 | 8 | W/E", "1.c | No Res | TP3 | 8 | C/W", "1.d | No Res | Drop",
+      "2.a | No Join Meet | TP1 | 5min | C/W/E", "2.b | No Join Meet | TP2 | 4 | W/E", "2.c | No Join Meet | TP3 | 12 | W/E",
+      "2.d | No Join Meet | TP4 | 16H| C/W", "2.e | No Join Meet | TP4 | Drop",
+      "3.a | Poor/No Res to Qn | TP1 | 8 | C/W", "3.b | Poor/No Res to Qn | TP2 | 16 | W/E",
+      "3.c | Poor/No Res to Question | TP3 | 8 | C/W", "3.d | Poor/No Res to Question | Drop",
+      "4.a | Change Scope | TP1 | 8 | W/E", "4.b  | Change Scope | TP2 | 24 | W/E", "4.c | Change Scope | TP3 | 12 | C/W", "4.d | Change Scope | Drop"
+  ],
+  cycleB: [
+      "5.a | No Res to Propose | TP1 | 8 | W/E", "5.b | No Res to Propose | TP2 | 12 | C/W", "5.c | No Res to Propose | TP3 | 24 | W/E",
+      "5.d | No Res to Propose | TP4 | 12 | W/E", "5.e | No Res to Propose | TP5 | 12 | C/W", "5.e | No Res to Propose | Drop",
+      "6.a | More Requirement | TP1 | 8 | W/E", "6.b | More Requirement | TP2 | 24 | W/E", "6.c | More Requirement | TP3 | 8 | W/E",
+      "6.d | More Requirement | TP4 | 12 | C/W", "6.e | More Requirement | TP5 | 24 | W/E", "6.f | More Requirement | TP6 | 12 | W/E",
+      "6.g | More Requirement | TP7 | 12 | W/E", "6.g | More Requirement | Drop",
+      "7.a | Change Scope | TP1 | 8 | C/W", "7.b | Change Scope | TP2 | 24 | W/E", "7.c | Change Scope | TP3 | 8 | W/E",
+      "7.d | Change Scope | TP4 | 12 | C/W", "7.e | Change Scope | TP5 | 24 | W/E", "7.f | Change Scope | TP6 | 12 | W/E",
+      "7.g | Change Scope | TP7 | 12 | W/E", "7.h | Change Scope | Drop",
+      "8.a | Review with Stake | TP1 | 8 | W/E", "8.b | Review with Stake | TP2 | 12 | C/W", "8.c | Review with Stake | TP3 | 24 | W/E",
+      "8.d | Review with Stake | TP4 | 12 | W/E", "8.e | Review with Stake | TP5 | 12 | W/E", "8.f | Review with Stake | TP6 | 24 | C/W",
+      "8.g | Review with Stake | Drop"
+  ],
+};
+
 // Columns the add-on may write, and how each is checked.
-type Kind = "text" | "num" | "bool" | "qualified" | "priority" | "chaselog" | "time";
+type Kind = "text" | "num" | "bool" | "qualified" | "priority" | "chaselog" | "time" | "stage" | "source" | "cycleA" | "cycleB";
 const COLUMNS: Record<string, Kind> = {
   qualified: "qualified",
   why_not_qualified: "text",
   priority: "priority",
-  chase_stage: "text",
+  chase_stage: "stage",
   chase_since: "time",
   chase_log: "chaselog",
   event_type: "text",
@@ -48,10 +76,10 @@ const COLUMNS: Record<string, Kind> = {
   company_name: "text",
   job_role: "text",
   notes_on_customer: "text",
-  lead_source: "text",
+  lead_source: "source",
   initial_enquiry: "text",
-  lead_cycle_contacted: "text",
-  lead_cycle_proposed: "text",
+  lead_cycle_contacted: "cycleA",
+  lead_cycle_proposed: "cycleB",
 };
 
 class Fail extends Error {
@@ -60,13 +88,14 @@ class Fail extends Error {
   }
 }
 
-function cors(origin: string | null) {
-  return {
-    "Access-Control-Allow-Origin": origin === ALLOWED_ORIGIN ? ALLOWED_ORIGIN : "null",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "content-type",
-    "Vary": "Origin",
-  };
+function cors(origin: string | null): Record<string, string> {
+  const h: Record<string, string> = { "Vary": "Origin" };
+  if (origin === ALLOWED_ORIGIN) {
+    h["Access-Control-Allow-Origin"] = ALLOWED_ORIGIN;
+    h["Access-Control-Allow-Methods"] = "POST, OPTIONS";
+    h["Access-Control-Allow-Headers"] = "content-type";
+  }
+  return h;
 }
 
 // ---------- Trello calls on the member's own token ----------
@@ -129,7 +158,7 @@ async function lockCard(token: string, cardId: string) {
 function clean(patch: Record<string, unknown>) {
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(patch ?? {})) {
-    const kind = COLUMNS[k];
+    const kind = Object.hasOwn(COLUMNS, k) ? COLUMNS[k] : undefined;
     if (!kind) throw new Fail(400, `Unknown box: ${k}`);
     if (v === null || v === "") {
       out[k] = kind === "bool" ? false : kind === "chaselog" ? [] : null;
@@ -155,6 +184,10 @@ function clean(patch: Record<string, unknown>) {
         break;
       case "priority":
         if (!["DEFCON 1", "DEFCON 2", "DEFCON 3"].includes(String(v))) throw new Fail(400, "Bad priority");
+        out[k] = v;
+        break;
+      case "stage": case "source": case "cycleA": case "cycleB":
+        if (!CHOICES[kind].includes(String(v))) throw new Fail(400, `Not one of the choices for ${k}`);
         out[k] = v;
         break;
       case "time":
@@ -215,6 +248,7 @@ async function move(token: string, cardId: string, to: string, why: unknown) {
   let reason: string;
   let source: "button" | "back";
   if (to === "BACK") {
+    if (!END_LISTS.includes(fromName.trim().toUpperCase())) throw new Fail(400, "Move back works only for cards in LOST or KIV.");
     const last = (await recentMoves(cardId)).find((m) => m.source !== "back" ? m.to_list === fromName : false);
     if (!last?.from_list) throw new Fail(400, "There is no earlier list to move back to.");
     target = lists.find((l) => l.name === last.from_list);
@@ -253,8 +287,8 @@ async function move(token: string, cardId: string, to: string, why: unknown) {
     }
   }
   // Touch the card row so Last Update shows who moved it and when.
-  await db.from("cards").upsert({ card_id: cardId, board_id: card.idBoard, last_update_by: who.fullName, last_update_by_id: who.id }, { onConflict: "card_id" });
-  return { moved: { ...moveRow, comment_posted: commented }, listName: target.name, idList: target.id, moves: await recentMoves(cardId) };
+  const { data: row } = await db.from("cards").upsert({ card_id: cardId, board_id: card.idBoard, last_update_by: who.fullName, last_update_by_id: who.id }, { onConflict: "card_id" }).select("last_update_at, last_update_by").single();
+  return { moved: { ...moveRow, comment_posted: commented }, listName: target.name, idList: target.id, moves: await recentMoves(cardId), data: row };
 }
 
 // A card dragged into LOST / KIV by hand: add the reason afterwards.
