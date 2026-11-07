@@ -5,8 +5,9 @@
   "use strict";
   const PD = window.PD;
   const ICON = new URL("./icon.svg", window.location.href).href;
-  // Card front, in this order: flag, Priority, Expected Close, Probability, Projected Revenue, Chase, 60 days.
-  const SLOTS = ["flag", "priority", "close", "prob", "rev", "chase", "quiet"];
+  // Card front, in this order: flag, Priority, Probability, Projected Revenue, Chase, 60 days.
+  // Expected Close taken off the front (Captain, 8 Nov 2026).
+  const SLOTS = ["flag", "priority", "prob", "rev", "chase", "quiet"];
 
   // One call per board fetches every card's badge values; kept for 15 seconds.
   const boardData = {};
@@ -41,7 +42,6 @@
       const o = PD.CHOICES.priority.find(x => x.t === row.priority);
       out.priority = { text: row.priority, color: o ? o.badge : null };
     }
-    if (row.expected_close) out.close = { text: "Close " + row.expected_close };
     if (row.probability !== null && row.probability !== undefined) {
       out.prob = { text: Number(row.probability) + "%", color: PD.probColour(Number(row.probability)) || null };
     }

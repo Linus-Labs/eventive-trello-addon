@@ -175,7 +175,13 @@
 
   // ---------- Chase ----------
   const chaseLog = () => Array.isArray(state.chase_log) ? state.chase_log : [];
-  const waitText = h => /min/i.test(h) ? parseFloat(h) + " min" : parseFloat(h) + " hrs";
+  const byHour = h => h === 18 ? "6 pm" : "3 pm";
+  const waitText = st => st.rule.exact ? (/min/i.test(st.wait) ? parseFloat(st.wait) + " min" : parseFloat(st.wait) + " hrs")
+    : (st.rule.days === 1 ? "1 working day" : st.rule.days + " working days") + ", by " + byHour(st.rule.hour);
+  const clock = d => d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }).toLowerCase();
+  // "3 pm" / "6 pm" for working-day waits; the exact clock ("4:15 pm") for strict ones.
+  const when = due => due.step.rule.exact ? clock(due.at) : byHour(due.step.rule.hour);
+  const fmtDay = d => d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
   function setCycle() {
     const n = PD.stageNo(state.chase_stage), done = chaseLog().length;
     state.lead_cycle_contacted = null; state.lead_cycle_proposed = null;
@@ -223,11 +229,12 @@
     const due = PD.nextDue(state.chase_stage, log, state.chase_since);
     const since = state.chase_since ? new Date(state.chase_since) : new Date();
     let html = done ? "Last chase " + esc(fmt(new Date(log[done - 1].at))) + (lastBy ? " by " + esc(lastBy) : "") + "."
-                    : "Waiting since " + esc(fmt(since)) + " (" + waitText(steps[0].wait) + " before the first chase).";
+                    : "Waiting since " + esc(fmt(since)) + " (first chase: " + waitText(steps[0]) + ").";
     if (due) {
       const late = new Date() > due.at;
       html += ' <span class="' + (late ? "chase-late" : "stamp") + '">Next: chase ' + (done + 1) + " by " + esc(due.step.how) +
-        (late ? ", overdue since " : ", due ") + esc(fmt(due.at)) + ".</span>";
+        (late ? ", overdue since " + esc(fmtDay(due.at) + ", " + when(due))
+              : ", due " + esc(fmtDay(due.at)) + (due.step.rule.exact ? ", " : ", by ") + esc(when(due))) + ".</span>";
     } else html += " No reply after the last chase: drop the lead when you are ready.";
     $("#chaseMeta").innerHTML = html;
   }

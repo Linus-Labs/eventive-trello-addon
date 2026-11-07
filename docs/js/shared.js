@@ -51,8 +51,34 @@
       const p = t.split("|").map(x => x.trim()).filter(Boolean);
       if (/drop/i.test(p[p.length - 1])) return { text: t, drop: true };
       const h = p[3], hours = /min/i.test(h) ? parseFloat(h) / 60 : parseFloat(h);
-      return { text: t, drop: false, hours: hours, wait: h, how: (p[4] || "").split("/").map(c => CH[c]).filter(Boolean).join(" or ") };
+      return { text: t, drop: false, hours: hours, rule: dueRule(hours), wait: h, how: (p[4] || "").split("/").map(c => CH[c]).filter(Boolean).join(" or ") };
     });
+  }
+  // When a chase is due (Captain, 8 Nov 2026):
+  //  - under 8 hours (5 min, 4 hours): strict clock time, any hour of the day;
+  //  - 8, 16, 24 hours: 1, 2, 3 working days later, by 3 pm;
+  //  - 12 hours (a part day over 8): the next working day, by 6 pm.
+  // Working days skip weekends and Singapore public holidays, days in lieu
+  // included (Ministry of Manpower list, read 8 Nov 2026). Add each new year here.
+  const SG_HOLIDAYS = new Set([
+    "2026-01-01", "2026-02-17", "2026-02-18", "2026-03-21", "2026-04-03", "2026-05-01", "2026-05-27",
+    "2026-05-31", "2026-06-01", "2026-08-09", "2026-08-10", "2026-11-08", "2026-11-09", "2026-12-25",
+    "2027-01-01", "2027-02-06", "2027-02-07", "2027-02-08", "2027-03-10", "2027-03-26", "2027-05-01",
+    "2027-05-17", "2027-05-20", "2027-08-09", "2027-10-28", "2027-12-25"
+  ]);
+  const ymd = d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  const isWorkDay = d => d.getDay() !== 0 && d.getDay() !== 6 && !SG_HOLIDAYS.has(ymd(d));
+  function dueRule(hours) {
+    if (hours < 8) return { exact: true, days: 0, hour: null };
+    return { exact: false, days: Math.floor(hours / 8), hour: hours % 8 ? 18 : 15 };
+  }
+  function dueAfter(base, hours) {
+    const b = new Date(base), r = dueRule(hours);
+    if (r.exact) return new Date(b.getTime() + hours * 3600000);
+    const day = new Date(b.getFullYear(), b.getMonth(), b.getDate(), r.hour, 0, 0, 0);
+    let n = r.days;
+    while (n > 0) { day.setDate(day.getDate() + 1); if (isWorkDay(day)) n--; }
+    return day;
   }
   const stageNo = stage => stage ? parseInt(stage, 10) || 0 : 0;
 
@@ -63,7 +89,7 @@
     if (!nxt || nxt.drop) return null;
     const base = log.length ? new Date(log[log.length - 1].at) : (since ? new Date(since) : null);
     if (!base) return null;
-    return { at: new Date(base.getTime() + nxt.hours * 3600000), step: nxt };
+    return { at: dueAfter(base, nxt.hours), step: nxt };
   }
   function lastActivity(stage, log, since) {
     if (!stageNo(stage)) return null;
@@ -141,7 +167,7 @@
 
   w.PD = {
     API_URL, APP_NAME, CHOICES, STAGE_SHORT, END_LISTS, DAY,
-    stepsFor, stageNo, nextDue, lastActivity, chaseSummary, isQuiet,
+    stepsFor, stageNo, nextDue, dueAfter, dueRule, isWorkDay, lastActivity, chaseSummary, isQuiet,
     probColour, marginColour, sgd, api, getConfig, getToken, signIn, signOut
   };
 })(window);
