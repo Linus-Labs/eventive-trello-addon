@@ -410,7 +410,7 @@
     }
   });
 
-  function setTheme(theme) { document.documentElement.setAttribute("data-theme", theme === "light" ? "light" : "dark"); }
+  function setTheme(theme) { document.documentElement.setAttribute("data-pd-theme", theme === "light" ? "light" : "dark"); }
 
   PD.getConfig().then(async cfg => {
     if (!cfg || !cfg.appKey) { status("The add-on is not set up yet (no Trello app key on the server).", true); return; }
