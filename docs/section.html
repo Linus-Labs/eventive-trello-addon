@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Project Details</title>
+<link rel="stylesheet" href="./css/section.css">
+<script src="https://p.trellocdn.com/power-up.min.js"></script>
+<script src="./js/shared.js"></script>
+</head>
+<body>
+<div id="app">
+
+  <div class="bar">
+    <span class="bar-status" id="status">Loading...</span>
+    <div class="end-bar hidden" id="endBar">
+      <button type="button" class="end-btn" data-to="LOST">Move to LOST</button>
+      <button type="button" class="end-btn" data-to="KIV">Move to KIV</button>
+    </div>
+    <div class="end-pop" id="endPop" role="dialog" aria-label="Move card">
+      <button type="button" class="end-pop-close" id="endClose" aria-label="Close">&times;</button>
+      <p class="end-pop-title" id="endTitle">Move to LOST</p>
+      <div class="label" id="endAsk">Why was it lost?</div>
+      <textarea class="area" id="endWhy" rows="3" placeholder="Price, our service, no reply..."></textarea>
+      <p class="end-hint" id="endHint">Type a reason first, or pick No reason given.</p>
+      <button type="button" class="end-quick" id="endQuick">No reason given</button>
+      <button type="button" class="end-go" id="endGo">Move</button>
+    </div>
+  </div>
+
+  <div class="signin hidden" id="signin">
+    <p>Sign in to Trello once so Project Details can check you are a member of this board.</p>
+    <button type="button" class="signin-btn" id="signinBtn">Sign in to Trello</button>
+  </div>
+
+  <div class="frame hidden" id="frame">
+
+    <div class="end-note" id="endNote"></div>
+    <div class="silence" id="silence"></div>
+
+    <!-- Qualified lead, Priority and Chase, above the tabs -->
+    <div class="top-row">
+      <div class="field">
+        <div class="label">Qualified lead</div>
+        <div class="seg" role="group" aria-label="Qualified lead">
+          <button type="button" class="seg-btn" data-q="yes">Yes</button>
+          <button type="button" class="seg-btn" data-q="no">No</button>
+        </div>
+        <div class="why" id="whyBox">
+          <div class="label">Why is it not qualified?</div>
+          <textarea class="area" data-field="why_not_qualified" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="field">
+        <div class="label">Priority</div>
+        <div class="dd" data-field="priority" data-kind="priority"></div>
+      </div>
+      <div class="field">
+        <div class="label">Chase</div>
+        <div class="chase-box">
+          <div class="chase-top">
+            <div class="dd" data-field="chase_stage" data-kind="stage"></div>
+            <button type="button" class="chase-btn" id="chaseBtn">+1 chase</button>
+          </div>
+          <div class="chase-row">
+            <span class="chase-count" id="chaseCount"></span>
+            <button type="button" class="chase-undo" id="chaseUndo">Undo</button>
+          </div>
+          <div class="chase-meta" id="chaseMeta"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab tab-req tab-on" role="tab" data-tab="req" aria-selected="true"><span class="tab-dot dot-req"></span>Requirement</button>
+      <button class="tab tab-com" role="tab" data-tab="com" aria-selected="false"><span class="tab-dot dot-com"></span>Expected Commercials</button>
+      <button class="tab tab-cus" role="tab" data-tab="cus" aria-selected="false"><span class="tab-dot dot-cus"></span>Customer Details</button>
+    </div>
+
+    <!-- Requirement -->
+    <section class="panel panel-on" data-panel="req" role="tabpanel">
+      <div class="grid">
+        <div class="field"><div class="label">Event Type<span class="star">*</span></div><input class="input req-box" data-field="event_type"></div>
+        <div class="field"><div class="label">Event Date<span class="star">*</span></div><input class="input req-box" data-field="event_date"></div>
+        <div class="field"><div class="label">Initial Budget<span class="star">*</span></div><input class="input req-box" data-field="initial_budget"></div>
+        <div class="field"><div class="label">Initial Pax<span class="star">*</span></div><input class="input req-box" data-field="initial_pax"></div>
+        <div class="field"><div class="label">Expected Close Date/Period<span class="star">*</span></div><input class="input req-box" data-field="expected_close"></div>
+        <div class="field">
+          <div class="label">Probability<span class="star">*</span>
+            <button class="help" type="button" aria-label="Help">?<span class="tip">10% (Lead) | 30% (Qualified) | 50% (Proposal) | 70% (Verbal Yes) | 90% (Invoice Out)</span></button>
+          </div>
+          <div class="affix"><input class="input pad-post req-box" data-field="probability" data-num="1" inputmode="numeric"><span class="affix-post">%</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Expected Commercials -->
+    <section class="panel" data-panel="com" role="tabpanel">
+      <div class="grid">
+        <div class="field"><div class="label">Projected Revenue<span class="star">*</span></div>
+          <div class="affix"><span class="affix-pre">SGD</span><input class="input pad-pre req-box money" data-field="projected_revenue" data-num="1" inputmode="decimal"></div></div>
+        <div class="field"><div class="label">C.O.G.S.<span class="star">*</span></div>
+          <div class="affix"><span class="affix-pre">SGD</span><input class="input pad-pre req-box money" data-field="cogs" data-num="1" inputmode="decimal"></div></div>
+        <div class="field"><div class="label">Margin <span class="auto-tag">(Auto)</span></div>
+          <div class="readonly" id="margin"><span class="readonly-muted">Fills in from Projected Revenue and C.O.G.S.</span></div></div>
+        <div class="field"><div class="label">Deposit</div>
+          <label class="check"><input type="checkbox" data-field="deposit"> Deposit received</label></div>
+      </div>
+    </section>
+
+    <!-- Customer Details -->
+    <section class="panel" data-panel="cus" role="tabpanel">
+      <div class="grid">
+        <div class="field"><div class="label">First Name<span class="star">*</span></div><input class="input req-box" data-field="first_name"></div>
+        <div class="field"><div class="label">Last Name<span class="star">*</span></div><input class="input req-box" data-field="last_name"></div>
+        <div class="field"><div class="label">Email<span class="star">*</span></div><input class="input req-box" data-field="email"></div>
+        <div class="field"><div class="label">Mobile<span class="star">*</span>
+            <button class="help" type="button" aria-label="Help">?<span class="tip">Direct Mobile Preferred | Include Country Code if Applicable</span></button></div>
+          <input class="input req-box" data-field="mobile"></div>
+        <div class="field"><div class="label">Company Name<span class="star">*</span></div><input class="input req-box" data-field="company_name"></div>
+        <div class="field"><div class="label">Job Role<span class="star">*</span></div><input class="input req-box" data-field="job_role"></div>
+        <div class="field"><div class="label">Notes on Customer</div><textarea class="area" data-field="notes_on_customer" rows="2"></textarea></div>
+        <div class="field"><div class="label">Lead Source<span class="star">*</span></div><div class="dd" data-field="lead_source" data-kind="source"></div></div>
+        <div class="field field-wide"><div class="label">Initial Enquiry<span class="star">*</span></div>
+          <textarea class="area area-enquiry req-box" data-field="initial_enquiry"></textarea></div>
+        <div class="field"><div class="label">Lead Cycle - Contacted Lead</div><div class="dd" data-field="lead_cycle_contacted" data-kind="cycleA"></div></div>
+        <div class="field"><div class="label">Lead Cycle - Proposed Lead</div><div class="dd" data-field="lead_cycle_proposed" data-kind="cycleB"></div></div>
+        <div class="field field-wide"><div class="label">Last Update <span class="auto-tag">(Auto)</span></div>
+          <div class="readonly"><span class="stamp" id="stamp"><span class="readonly-muted">Not changed yet</span></span></div></div>
+      </div>
+    </section>
+
+  </div>
+</div>
+<script src="./js/section.js"></script>
+</body>
+</html>
